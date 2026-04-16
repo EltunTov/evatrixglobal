@@ -1,0 +1,17 @@
+{
+  "users": [
+    {
+      "id": "7b586568-1509-4dd4-a653-d1b3dd8b6b44",
+      "email": "eltoon098@gmail.com",
+      "passwordHash": "4b38a8e57c4cf696306de75069f50bce0b05aefd39069e26881eeac25e4d1cde",
+      "role": "free",
+      "createdAt": "2026-04-13T17:48:46.405Z",
+      "updatedAt": "2026-04-16T20:17:01.343Z",
+      "verifiedAt": "2026-04-13T17:48:46.405Z",
+      "freeExpiresAt": "2026-04-15T17:48:46.405Z",
+      "proStartedAt": null,
+      "lastLoginAt": "2026-04-16T20:17:01.343Z"
+    }
+  ],
+  "codes": []
+}
