@@ -16,21 +16,26 @@ export default function LoginPage() {
     setLoading(true);
     setMsg("");
 
-    const res = await fetch("/api/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
 
-    const data = await res.json();
-    setLoading(false);
+      const data = await res.json();
+      setLoading(false);
 
-    if (!data.ok) {
-      setMsg(data.error || "Login failed.");
-      return;
+      if (!data.ok) {
+        setMsg(data.error || "Login failed.");
+        return;
+      }
+
+      router.push("/dashboard");
+    } catch {
+      setLoading(false);
+      setMsg("Something went wrong. Please try again.");
     }
-
-    router.push("/dashboard");
   }
 
   return (
@@ -49,8 +54,8 @@ export default function LoginPage() {
             </div>
           </div>
 
-          <Link href="/access" className="evx-link-pill">
-            Create Account
+          <Link href="/signup" className="evx-link-pill">
+            Sign Up
           </Link>
         </div>
 
@@ -91,12 +96,38 @@ export default function LoginPage() {
               />
             </label>
 
+            <div style={{ marginTop: -6, marginBottom: 8, display: "flex", justifyContent: "flex-end" }}>
+              <Link
+                href="/forgot-password"
+                style={{
+                  fontSize: "14px",
+                  color: "#7ddcff",
+                  textDecoration: "none",
+                }}
+              >
+                Forgot password?
+              </Link>
+            </div>
+
             <button type="submit" className="evx-button evx-button-primary" disabled={loading}>
               {loading ? "Please wait..." : "Continue"}
             </button>
           </form>
 
           {msg ? <p style={{ marginTop: 14, color: "#9fdcff" }}>{msg}</p> : null}
+
+          <div style={{ marginTop: 18, color: "rgba(255,255,255,0.58)", fontSize: "14px" }}>
+            Don&apos;t have an account?{" "}
+            <Link
+              href="/signup"
+              style={{
+                color: "#7ddcff",
+                textDecoration: "none",
+              }}
+            >
+              Sign up
+            </Link>
+          </div>
         </div>
       </section>
     </main>

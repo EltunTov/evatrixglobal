@@ -42,7 +42,7 @@ export const siteConfig = {
       id: "pro",
       label: "Pro",
       duration: "3 Months",
-      price: "60 USDT",
+      price: "65 USDT",
       save: "Save 20%",
       featured: true,
       points: [
@@ -56,7 +56,7 @@ export const siteConfig = {
       id: "elite",
       label: "Elite",
       duration: "6 Months",
-      price: "100 USDT",
+      price: "115 USDT",
       save: "Save 33%",
       featured: false,
       points: [

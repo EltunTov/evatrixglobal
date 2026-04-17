@@ -98,43 +98,50 @@ export default function HomePage() {
             </nav>
 
             <div className="flex items-center gap-3">
-              <div className="relative">
-                <button
-                  onClick={() => setLangOpen((v) => !v)}
-                  className="rounded-2xl border border-white/12 bg-white/5 px-4 py-3 text-sm text-white/90 transition hover:border-cyan-400/35 hover:bg-white/[0.08]"
-                >
-                  {selectedLang}
-                </button>
-
-                {langOpen && (
-                  <div className="absolute right-0 top-14 z-30 min-w-[110px] rounded-2xl border border-white/10 bg-[#0a1023]/95 p-2 shadow-[0_0_40px_rgba(0,0,0,0.35)] backdrop-blur">
-                    {languages.map((lang) => (
-                      <button
-                        key={lang}
-                        onClick={() => {
-                          setSelectedLang(lang);
-                          setLangOpen(false);
-                        }}
-                        className={`block w-full rounded-xl px-3 py-2 text-left text-sm transition ${
-                          selectedLang === lang
-                            ? "bg-cyan-400/10 text-cyan-300"
-                            : "text-white/75 hover:bg-white/5"
-                        }`}
-                      >
-                        {lang}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <Link
-                href="/login"
-                className="rounded-2xl border border-white/12 bg-white/5 px-5 py-3 text-sm text-white/90 transition hover:border-cyan-400/35 hover:bg-white/[0.08]"
+             <div className="relative">
+              <button
+               onClick={() => setLangOpen((v) => !v)}
+               className="rounded-2xl border border-white/12 bg-white/5 px-4 py-3 text-sm text-white/90 transition hover:border-cyan-400/35 hover:bg-white/[0.08]"
               >
-                Member Login
-              </Link>
-            </div>
+               {selectedLang}
+              </button>
+
+              {langOpen && (
+               <div className="absolute right-0 top-14 z-30 min-w-[110px] rounded-2xl border border-white/10 bg-[#0a1023]/95 p-2 shadow-[0_0_40px_rgba(0,0,0,0.35)] backdrop-blur">
+                {languages.map((lang) => (
+                 <button
+                  key={lang}
+                  onClick={() => {
+                   setSelectedLang(lang);
+                   setLangOpen(false);
+                  }}
+                  className={`block w-full rounded-xl px-3 py-2 text-left text-sm transition ${
+                   selectedLang === lang
+                    ? "bg-cyan-400/10 text-cyan-300"
+                     : "text-white/75 hover:bg-white/5"
+                  }`}
+                 >
+                  {lang}
+                 </button>
+               ))}
+             </div>
+            )}
+           </div>
+
+           <Link
+            href="/signup"
+            className="rounded-2xl bg-cyan-400 px-5 py-3 text-sm font-medium text-black transition hover:opacity-90"
+           >
+            Sign Up
+           </Link>
+
+           <Link
+            href="/login"
+            className="rounded-2xl border border-white/12 bg-white/5 px-5 py-3 text-sm text-white/90 transition hover:border-cyan-400/35 hover:bg-white/[0.08]"
+           >
+            Member Login
+           </Link>
+          </div>
           </header>
 
           <section className="grid items-center gap-10 py-10 lg:grid-cols-[0.92fr_1.08fr] lg:py-14">
@@ -304,17 +311,17 @@ export default function HomePage() {
                   </div>
 
                   <div className="mt-8">
-                    <button
-                      onClick={() => scrollToSection("help-strip")}
-                      className={`w-full rounded-2xl px-5 py-3 text-sm font-medium transition ${
-                        plan.featured
-                          ? "bg-cyan-400 text-black hover:opacity-90"
-                          : "border border-white/12 bg-white/5 text-white hover:bg-white/[0.08]"
-                      }`}
-                    >
-                      View Access
-                    </button>
-                  </div>
+                   <Link
+                    href={`/register?plan=${plan.id}`}
+                    className={`flex w-full items-center justify-center rounded-2xl px-5 py-3 text-sm font-medium transition ${
+                     plan.featured
+                      ? "bg-cyan-400 text-black hover:opacity-90"
+                       : "border border-white/12 bg-white/5 text-white hover:bg-white/[0.08]"
+                  }`}
+                >
+                 View Access
+               </Link>
+              </div>
                 </div>
               ))}
             </div>
@@ -497,15 +504,15 @@ export default function HomePage() {
                 </div>
 
                 <p className="mt-5 max-w-xl text-sm leading-7 text-white/62">
-                  Premium crypto signal intelligence, cleaner execution visibility,
-                  and controlled access for disciplined market participants.
+                  Broad crypto market monitoring, cleaner execution visibility,
+                  and structured access for disciplined global operators.
                 </p>
 
                 <div className="mt-6 flex flex-wrap gap-3">
                   {[
-                    `${siteConfig.stats.activePairs} active pairs`,
-                    "Live analytics",
-                    "Premium signal workflow",
+                   "Broad crypto market coverage",
+                   "High-liquidity asset monitoring",
+                   "Institutional signal workflow",
                   ].map((item) => (
                     <span
                       key={item}
@@ -519,17 +526,33 @@ export default function HomePage() {
 
               <div className="grid gap-6 sm:grid-cols-3">
                 <FooterColumn
-                  title="Platform"
-                  items={["Features", "Showcase", "Pricing", "How It Works"]}
-                />
-                <FooterColumn
-                  title="Account"
-                  items={["Member Login", "Dashboard", "Help Center"]}
-                />
-                <FooterColumn
-                  title="Legal"
-                  items={siteConfig.footer.legal}
-                />
+                 title="Platform"
+                 items={[
+                  { label: "Features", href: "#features", isSection: true },
+                  { label: "Showcase", href: "#showcase", isSection: true },
+                  { label: "Pricing", href: "#pricing", isSection: true },
+                  { label: "How It Works", href: "#how-it-works", isSection: true },
+                ]}
+              />
+
+              <FooterColumn
+               title="Account"
+               items={[
+                { label: "Member Login", href: "/login" },
+                { label: "Dashboard", href: "/dashboard" },
+                { label: "Help Center", href: "/dashboard/help" },
+               ]}
+              />
+
+              <FooterColumn
+               title="Legal"
+               items={[
+                { label: "Terms", href: "/terms" },
+                { label: "Privacy", href: "/privacy" },
+                { label: "Risk Disclosure", href: "/risk-disclosure" },
+                { label: "Help Center", href: "/dashboard/help" },
+              ]}
+            />
               </div>
             </div>
 
@@ -793,16 +816,42 @@ function DataCell({ label, value }: { label: string; value: string }) {
   );
 }
 
-function FooterColumn({ title, items }: { title: string; items: string[] }) {
+function FooterColumn({
+  title,
+  items,
+}: {
+  title: string;
+  items: { label: string; href: string; isSection?: boolean }[];
+}) {
   return (
     <div>
       <div className="text-[11px] uppercase tracking-[0.28em] text-white/42">
         {title}
       </div>
+
       <div className="mt-4 space-y-3 text-sm text-white/72">
-        {items.map((item) => (
-          <div key={item}>{item}</div>
-        ))}
+        {items.map((item) =>
+          item.isSection ? (
+            <button
+              key={item.label}
+              onClick={() => {
+                const el = document.getElementById(item.href.replace("#", ""));
+                if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+              }}
+              className="block text-left transition hover:text-cyan-300"
+            >
+              {item.label}
+            </button>
+          ) : (
+            <Link
+              key={item.label}
+              href={item.href}
+              className="block transition hover:text-cyan-300"
+            >
+              {item.label}
+            </Link>
+          )
+        )}
       </div>
     </div>
   );
