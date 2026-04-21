@@ -1,6 +1,5 @@
-import fs from "fs";
-import path from "path";
 import crypto from "crypto";
+import { neon } from "@neondatabase/serverless";
 
 export type Role = "free" | "pro" | "admin";
 
@@ -24,30 +23,56 @@ export type CodeRecord = {
   createdAt: string;
 };
 
-type AppDb = {
-  users: UserRecord[];
-  codes: CodeRecord[];
+type UserRow = {
+  id: string;
+  email: string;
+  password_hash: string;
+  role: string;
+  created_at: string;
+  updated_at: string;
+  verified_at: string | null;
+  free_expires_at: string | null;
+  pro_started_at: string | null;
+  last_login_at: string | null;
 };
 
-const DB_PATH = path.join(process.cwd(), "data", "app.json");
+type CodeRow = {
+  email: string;
+  code: string;
+  expires_at: string;
+  created_at: string;
+};
 
-function ensureDb() {
-  const dir = path.dirname(DB_PATH);
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  if (!fs.existsSync(DB_PATH)) {
-    fs.writeFileSync(DB_PATH, JSON.stringify({ users: [], codes: [] }, null, 2), "utf-8");
-  }
+const databaseUrl = process.env.DATABASE_URL;
+
+if (!databaseUrl) {
+  throw new Error("DATABASE_URL is missing.");
 }
 
-export function readDb(): AppDb {
-  ensureDb();
-  const raw = fs.readFileSync(DB_PATH, "utf-8");
-  return JSON.parse(raw) as AppDb;
+const sql = neon(databaseUrl);
+
+function mapUser(row: UserRow): UserRecord {
+  return {
+    id: row.id,
+    email: row.email,
+    passwordHash: row.password_hash,
+    role: row.role as Role,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    verifiedAt: row.verified_at,
+    freeExpiresAt: row.free_expires_at,
+    proStartedAt: row.pro_started_at,
+    lastLoginAt: row.last_login_at,
+  };
 }
 
-export function writeDb(db: AppDb) {
-  ensureDb();
-  fs.writeFileSync(DB_PATH, JSON.stringify(db, null, 2), "utf-8");
+function mapCode(row: CodeRow): CodeRecord {
+  return {
+    email: row.email,
+    code: row.code,
+    expiresAt: row.expires_at,
+    createdAt: row.created_at,
+  };
 }
 
 export function normalizeEmail(email: string) {
@@ -70,112 +95,243 @@ export function addHours(date: Date, hours: number) {
   return new Date(date.getTime() + hours * 60 * 60 * 1000);
 }
 
-export function upsertCode(email: string, code: string) {
-  const db = readDb();
+export async function upsertCode(email: string, code: string) {
   const normalized = normalizeEmail(email);
   const now = new Date();
+  const createdAt = now.toISOString();
+  const expiresAt = addMinutes(now, 10).toISOString();
 
-  db.codes = db.codes.filter(
-    (c) => !(normalizeEmail(c.email) === normalized)
-  );
-
-  db.codes.push({
-    email: normalized,
-    code,
-    createdAt: now.toISOString(),
-    expiresAt: addMinutes(now, 10).toISOString(),
-  });
-
-  writeDb(db);
+  await sql`
+    INSERT INTO verification_codes (email, code, created_at, expires_at)
+    VALUES (${normalized}, ${code}, ${createdAt}, ${expiresAt})
+    ON CONFLICT (email)
+    DO UPDATE SET
+      code = EXCLUDED.code,
+      created_at = EXCLUDED.created_at,
+      expires_at = EXCLUDED.expires_at
+  `;
 }
 
-export function verifyCode(email: string, code: string) {
-  const db = readDb();
+export async function getCode(email: string) {
   const normalized = normalizeEmail(email);
-  const now = Date.now();
 
-  const rec = db.codes.find(
-    (c) => normalizeEmail(c.email) === normalized && c.code === code
-  );
+  const rows = await sql`
+    SELECT email, code, expires_at, created_at
+    FROM verification_codes
+    WHERE email = ${normalized}
+    LIMIT 1
+  ` as unknown as CodeRow[];
 
-  if (!rec) return false;
-  if (new Date(rec.expiresAt).getTime() < now) return false;
+  if (!rows.length) return null;
+  return mapCode(rows[0]);
+}
+
+export async function verifyCode(email: string, code: string) {
+  const normalized = normalizeEmail(email);
+
+  const rows = await sql`
+    SELECT email, code, expires_at, created_at
+    FROM verification_codes
+    WHERE email = ${normalized} AND code = ${code}
+    LIMIT 1
+  ` as unknown as CodeRow[];
+
+  if (!rows.length) return false;
+
+  const rec = rows[0];
+  if (new Date(rec.expires_at).getTime() < Date.now()) return false;
+
   return true;
 }
 
-export function consumeCode(email: string, code: string) {
-  const db = readDb();
+export async function consumeCode(email: string, code: string) {
   const normalized = normalizeEmail(email);
 
-  db.codes = db.codes.filter(
-    (c) => !(normalizeEmail(c.email) === normalized && c.code === code)
-  );
-
-  writeDb(db);
+  await sql`
+    DELETE FROM verification_codes
+    WHERE email = ${normalized} AND code = ${code}
+  `;
 }
 
-export function findUserByEmail(email: string) {
-  const db = readDb();
+export async function findUserByEmail(email: string) {
   const normalized = normalizeEmail(email);
-  return db.users.find((u) => normalizeEmail(u.email) === normalized) || null;
+
+  const rows = await sql`
+    SELECT
+      id,
+      email,
+      password_hash,
+      role,
+      created_at,
+      updated_at,
+      verified_at,
+      free_expires_at,
+      pro_started_at,
+      last_login_at
+    FROM users
+    WHERE email = ${normalized}
+    LIMIT 1
+  ` as unknown as UserRow[];
+
+  if (!rows.length) return null;
+  return mapUser(rows[0]);
 }
 
-export function createUser(email: string, password: string) {
-  const db = readDb();
+export async function findUserById(id: string) {
+  const rows = await sql`
+    SELECT
+      id,
+      email,
+      password_hash,
+      role,
+      created_at,
+      updated_at,
+      verified_at,
+      free_expires_at,
+      pro_started_at,
+      last_login_at
+    FROM users
+    WHERE id = ${id}
+    LIMIT 1
+  ` as unknown as UserRow[];
+
+  if (!rows.length) return null;
+  return mapUser(rows[0]);
+}
+
+export async function createUser(email: string, password: string) {
   const normalized = normalizeEmail(email);
-  const now = new Date();
+  const now = new Date().toISOString();
+
   const adminEmails = (process.env.ADMIN_EMAILS || "")
     .split(",")
     .map((x) => x.trim().toLowerCase())
     .filter(Boolean);
 
-  const isAdmin = adminEmails.includes(normalized);
+  const role: Role = adminEmails.includes(normalized) ? "admin" : "free";
 
   const user: UserRecord = {
     id: crypto.randomUUID(),
     email: normalized,
     passwordHash: hashPassword(password),
-    role: isAdmin ? "admin" : "free",
-    createdAt: now.toISOString(),
-    updatedAt: now.toISOString(),
-    verifiedAt: now.toISOString(),
-    freeExpiresAt: addHours(now, 48).toISOString(),
+    role,
+    createdAt: now,
+    updatedAt: now,
+    verifiedAt: now,
+    freeExpiresAt: addHours(new Date(), 48).toISOString(),
     proStartedAt: null,
-    lastLoginAt: now.toISOString(),
+    lastLoginAt: now,
   };
 
-  db.users.push(user);
-  writeDb(db);
+  await sql`
+    INSERT INTO users (
+      id,
+      email,
+      password_hash,
+      role,
+      created_at,
+      updated_at,
+      verified_at,
+      free_expires_at,
+      pro_started_at,
+      last_login_at
+    )
+    VALUES (
+      ${user.id},
+      ${user.email},
+      ${user.passwordHash},
+      ${user.role},
+      ${user.createdAt},
+      ${user.updatedAt},
+      ${user.verifiedAt},
+      ${user.freeExpiresAt},
+      ${user.proStartedAt},
+      ${user.lastLoginAt}
+    )
+  `;
+
   return user;
 }
 
-export function validatePassword(email: string, password: string) {
-  const user = findUserByEmail(email);
+export async function validatePassword(email: string, password: string) {
+  const user = await findUserByEmail(email);
   if (!user) return null;
   if (user.passwordHash !== hashPassword(password)) return null;
 
-  const db = readDb();
-  const idx = db.users.findIndex((u) => u.id === user.id);
-  if (idx >= 0) {
-    db.users[idx].lastLoginAt = new Date().toISOString();
-    db.users[idx].updatedAt = new Date().toISOString();
-    writeDb(db);
-    return db.users[idx];
-  }
+  const now = new Date().toISOString();
 
-  return user;
+  await sql`
+    UPDATE users
+    SET updated_at = ${now}, last_login_at = ${now}
+    WHERE id = ${user.id}
+  `;
+
+  return {
+    ...user,
+    updatedAt: now,
+    lastLoginAt: now,
+  };
 }
 
-export function getStats() {
-  const db = readDb();
+export async function listUsers(limit = 100) {
+  const rows = await sql`
+    SELECT
+      id,
+      email,
+      password_hash,
+      role,
+      created_at,
+      updated_at,
+      verified_at,
+      free_expires_at,
+      pro_started_at,
+      last_login_at
+    FROM users
+    ORDER BY created_at DESC
+    LIMIT ${limit}
+  ` as unknown as UserRow[];
+
+  return rows.map(mapUser);
+}
+
+export async function getStats() {
+  const totalRows = await sql`
+    SELECT COUNT(*)::int AS count
+    FROM users
+  ` as unknown as { count: number }[];
+
+  const freeRows = await sql`
+    SELECT COUNT(*)::int AS count
+    FROM users
+    WHERE role = 'free'
+  ` as unknown as { count: number }[];
+
+  const proRows = await sql`
+    SELECT COUNT(*)::int AS count
+    FROM users
+    WHERE role = 'pro'
+  ` as unknown as { count: number }[];
+
+  const adminRows = await sql`
+    SELECT COUNT(*)::int AS count
+    FROM users
+    WHERE role = 'admin'
+  ` as unknown as { count: number }[];
+
+  const verifiedRows = await sql`
+    SELECT COUNT(*)::int AS count
+    FROM users
+    WHERE verified_at IS NOT NULL
+  ` as unknown as { count: number }[];
+
+  const recentUsers = await listUsers(10);
+
   return {
-    totalUsers: db.users.length,
-    freeUsers: db.users.filter((u) => u.role === "free").length,
-    proUsers: db.users.filter((u) => u.role === "pro").length,
-    adminUsers: db.users.filter((u) => u.role === "admin").length,
-    verifiedUsers: db.users.filter((u) => !!u.verifiedAt).length,
-    recentUsers: [...db.users]
-      .sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt))
-      .slice(0, 10),
+    totalUsers: totalRows[0]?.count || 0,
+    freeUsers: freeRows[0]?.count || 0,
+    proUsers: proRows[0]?.count || 0,
+    adminUsers: adminRows[0]?.count || 0,
+    verifiedUsers: verifiedRows[0]?.count || 0,
+    recentUsers,
   };
 }

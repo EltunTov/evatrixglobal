@@ -3,6 +3,29 @@
 import { useEffect, useMemo, useState } from "react";
 import EvatrixSiteLogo from "../components/evatrix-site-logo";
 
+type Role = "free" | "pro" | "admin";
+
+type UserRecord = {
+  id: string;
+  email: string;
+  role: Role;
+  createdAt: string;
+  updatedAt: string;
+  verifiedAt: string | null;
+  freeExpiresAt: string | null;
+  proStartedAt: string | null;
+  lastLoginAt: string | null;
+};
+
+type AdminStats = {
+  totalUsers: number;
+  freeUsers: number;
+  proUsers: number;
+  adminUsers: number;
+  verifiedUsers: number;
+  recentUsers: UserRecord[];
+};
+
 type AdminTab =
   | "overview"
   | "users"
@@ -11,10 +34,6 @@ type AdminTab =
   | "access"
   | "activity"
   | "settings";
-
-const ADMIN_USERNAME = "adminevatrix";
-const ADMIN_PASSWORD = "evatrix2026";
-const STORAGE_KEY = "evatrix_admin_auth";
 
 function StatCard({
   title,
@@ -27,7 +46,9 @@ function StatCard({
 }) {
   return (
     <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-5 shadow-[0_0_0_1px_rgba(255,255,255,0.02)]">
-      <div className="text-xs uppercase tracking-[0.22em] text-white/45">{title}</div>
+      <div className="text-xs uppercase tracking-[0.22em] text-white/45">
+        {title}
+      </div>
       <div className="mt-3 text-3xl font-semibold text-white">{value}</div>
       <div className="mt-2 text-sm text-white/55">{note}</div>
     </div>
@@ -48,7 +69,9 @@ function SectionCard({
       <div className="flex items-start justify-between gap-4">
         <div>
           <h3 className="text-lg font-semibold text-white">{title}</h3>
-          {subtitle ? <p className="mt-1 text-sm text-white/55">{subtitle}</p> : null}
+          {subtitle ? (
+            <p className="mt-1 text-sm text-white/55">{subtitle}</p>
+          ) : null}
         </div>
       </div>
       <div className="mt-5">{children}</div>
@@ -56,21 +79,22 @@ function SectionCard({
   );
 }
 
+function formatDate(value: string | null) {
+  if (!value) return "-";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "-";
+  return d.toLocaleString();
+}
+
 export default function AdminPage() {
   const [isReady, setIsReady] = useState(false);
-  const [isAuthed, setIsAuthed] = useState(false);
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [loginError, setLoginError] = useState("");
+  const [isAuthorized, setIsAuthorized] = useState(false);
+  const [currentAdminEmail, setCurrentAdminEmail] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
   const [activeTab, setActiveTab] = useState<AdminTab>("overview");
-
-  useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved === "true") {
-      setIsAuthed(true);
-    }
-    setIsReady(true);
-  }, []);
+  const [stats, setStats] = useState<AdminStats | null>(null);
+  const [users, setUsers] = useState<UserRecord[]>([]);
 
   const navItems = useMemo(
     () => [
@@ -85,25 +109,70 @@ export default function AdminPage() {
     []
   );
 
-  function handleLogin(e: React.FormEvent) {
-    e.preventDefault();
+  useEffect(() => {
+    let mounted = true;
 
-    if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
-      localStorage.setItem(STORAGE_KEY, "true");
-      setIsAuthed(true);
-      setLoginError("");
-      return;
+    async function load() {
+      try {
+        const meRes = await fetch("/api/auth/me", { cache: "no-store" });
+        const meData = await meRes.json();
+
+        if (!mounted) return;
+
+        if (!meData?.user) {
+          window.location.href = "/login?next=/admin";
+          return;
+        }
+
+        if (meData.user.role !== "admin") {
+          setIsAuthorized(false);
+          setLoadError("This account is not authorized for admin access.");
+          setLoading(false);
+          setIsReady(true);
+          return;
+        }
+
+        setCurrentAdminEmail(meData.user.email);
+        setIsAuthorized(true);
+
+        const overviewRes = await fetch("/api/admin/overview", {
+          cache: "no-store",
+        });
+        const overviewData = await overviewRes.json();
+
+        if (!mounted) return;
+
+        if (!overviewRes.ok || !overviewData?.ok) {
+          setLoadError(overviewData?.error || "Failed to load admin data.");
+          setLoading(false);
+          setIsReady(true);
+          return;
+        }
+
+        setStats(overviewData.stats);
+        setUsers(overviewData.users || []);
+        setLoading(false);
+        setIsReady(true);
+      } catch {
+        if (!mounted) return;
+        setLoadError("Admin panel failed to load.");
+        setLoading(false);
+        setIsReady(true);
+      }
     }
 
-    setLoginError("Invalid admin credentials.");
-  }
+    load();
 
-  function handleLogout() {
-    localStorage.removeItem(STORAGE_KEY);
-    setIsAuthed(false);
-    setUsername("");
-    setPassword("");
-    setActiveTab("overview");
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  async function handleLogout() {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } catch {}
+    window.location.href = "/login";
   }
 
   function renderContent() {
@@ -112,10 +181,26 @@ export default function AdminPage() {
         return (
           <div className="space-y-6">
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              <StatCard title="Total Members" value="124" note="All registered accounts" />
-              <StatCard title="Active Premium" value="28" note="Currently paid members" />
-              <StatCard title="Free Preview" value="71" note="Observer / preview users" />
-              <StatCard title="Expiring Soon" value="6" note="Ending within 7 days" />
+              <StatCard
+                title="Total Members"
+                value={String(stats?.totalUsers ?? 0)}
+                note="All registered accounts"
+              />
+              <StatCard
+                title="Free Preview"
+                value={String(stats?.freeUsers ?? 0)}
+                note="Current free-access users"
+              />
+              <StatCard
+                title="Premium Users"
+                value={String(stats?.proUsers ?? 0)}
+                note="Current paid/pro members"
+              />
+              <StatCard
+                title="Admins"
+                value={String(stats?.adminUsers ?? 0)}
+                note="Privileged control accounts"
+              />
             </div>
 
             <div className="grid gap-6 xl:grid-cols-[1.35fr_0.95fr]">
@@ -127,31 +212,35 @@ export default function AdminPage() {
                   <table className="w-full text-left text-sm">
                     <thead className="bg-white/[0.04] text-white/50">
                       <tr>
-                        <th className="px-4 py-3 font-medium">User</th>
-                        <th className="px-4 py-3 font-medium">Plan</th>
-                        <th className="px-4 py-3 font-medium">Status</th>
+                        <th className="px-4 py-3 font-medium">Email</th>
+                        <th className="px-4 py-3 font-medium">Role</th>
+                        <th className="px-4 py-3 font-medium">Verified</th>
                         <th className="px-4 py-3 font-medium">Joined</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-white/10 text-white/80">
-                      <tr>
-                        <td className="px-4 py-3">alina@evatrix.com</td>
-                        <td className="px-4 py-3">Pro Crypto</td>
-                        <td className="px-4 py-3">Active</td>
-                        <td className="px-4 py-3">2026-04-16</td>
-                      </tr>
-                      <tr>
-                        <td className="px-4 py-3">murat@evatrix.com</td>
-                        <td className="px-4 py-3">Free Preview</td>
-                        <td className="px-4 py-3">Active</td>
-                        <td className="px-4 py-3">2026-04-15</td>
-                      </tr>
-                      <tr>
-                        <td className="px-4 py-3">nina@evatrix.com</td>
-                        <td className="px-4 py-3">Pro Crypto</td>
-                        <td className="px-4 py-3">Expiring</td>
-                        <td className="px-4 py-3">2026-04-11</td>
-                      </tr>
+                      {(stats?.recentUsers || []).map((user) => (
+                        <tr key={user.id}>
+                          <td className="px-4 py-3">{user.email}</td>
+                          <td className="px-4 py-3 uppercase">{user.role}</td>
+                          <td className="px-4 py-3">
+                            {user.verifiedAt ? "Yes" : "No"}
+                          </td>
+                          <td className="px-4 py-3">
+                            {formatDate(user.createdAt)}
+                          </td>
+                        </tr>
+                      ))}
+                      {!stats?.recentUsers?.length && (
+                        <tr>
+                          <td
+                            colSpan={4}
+                            className="px-4 py-6 text-center text-white/45"
+                          >
+                            No users yet.
+                          </td>
+                        </tr>
+                      )}
                     </tbody>
                   </table>
                 </div>
@@ -159,24 +248,26 @@ export default function AdminPage() {
 
               <SectionCard
                 title="System Snapshot"
-                subtitle="High-level owner view of platform availability"
+                subtitle="Live owner view of platform availability"
               >
                 <div className="space-y-3 text-sm text-white/75">
                   <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
-                    <span>Crypto Signals</span>
+                    <span>Verified Users</span>
+                    <span className="text-emerald-300">
+                      {stats?.verifiedUsers ?? 0}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
+                    <span>Database</span>
+                    <span className="text-emerald-300">Connected</span>
+                  </div>
+                  <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
+                    <span>Session Layer</span>
                     <span className="text-emerald-300">Active</span>
                   </div>
                   <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
-                    <span>Forex Module</span>
-                    <span className="text-amber-300">Locked</span>
-                  </div>
-                  <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
-                    <span>Preview Access</span>
-                    <span className="text-emerald-300">Open</span>
-                  </div>
-                  <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
-                    <span>Payments</span>
-                    <span className="text-emerald-300">Stable</span>
+                    <span>Current Admin</span>
+                    <span className="text-cyan-300">{currentAdminEmail}</span>
                   </div>
                 </div>
               </SectionCard>
@@ -186,30 +277,41 @@ export default function AdminPage() {
 
       case "users":
         return (
-          <SectionCard title="Users" subtitle="Manage members, roles, and visibility">
+          <SectionCard
+            title="Users"
+            subtitle="Live registered users from production database"
+          >
             <div className="overflow-hidden rounded-2xl border border-white/10">
               <table className="w-full text-left text-sm">
                 <thead className="bg-white/[0.04] text-white/50">
                   <tr>
                     <th className="px-4 py-3 font-medium">Email</th>
                     <th className="px-4 py-3 font-medium">Role</th>
-                    <th className="px-4 py-3 font-medium">Package</th>
-                    <th className="px-4 py-3 font-medium">Status</th>
+                    <th className="px-4 py-3 font-medium">Created</th>
+                    <th className="px-4 py-3 font-medium">Last Login</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/10 text-white/80">
-                  <tr>
-                    <td className="px-4 py-3">alina@evatrix.com</td>
-                    <td className="px-4 py-3">Member</td>
-                    <td className="px-4 py-3">Pro Crypto</td>
-                    <td className="px-4 py-3">Active</td>
-                  </tr>
-                  <tr>
-                    <td className="px-4 py-3">murat@evatrix.com</td>
-                    <td className="px-4 py-3">Member</td>
-                    <td className="px-4 py-3">Free Preview</td>
-                    <td className="px-4 py-3">Active</td>
-                  </tr>
+                  {users.map((user) => (
+                    <tr key={user.id}>
+                      <td className="px-4 py-3">{user.email}</td>
+                      <td className="px-4 py-3 uppercase">{user.role}</td>
+                      <td className="px-4 py-3">{formatDate(user.createdAt)}</td>
+                      <td className="px-4 py-3">
+                        {formatDate(user.lastLoginAt)}
+                      </td>
+                    </tr>
+                  ))}
+                  {!users.length && (
+                    <tr>
+                      <td
+                        colSpan={4}
+                        className="px-4 py-6 text-center text-white/45"
+                      >
+                        No users found.
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>
@@ -218,56 +320,61 @@ export default function AdminPage() {
 
       case "packages":
         return (
-          <SectionCard title="Packages" subtitle="Track package distribution and member tiers">
+          <SectionCard
+            title="Packages"
+            subtitle="Live membership distribution"
+          >
             <div className="grid gap-4 md:grid-cols-3">
-              <StatCard title="Free Preview" value="71" note="Observer tier users" />
-              <StatCard title="Pro Crypto" value="28" note="Active premium accounts" />
-              <StatCard title="Pro Auto" value="0" note="Not opened yet" />
+              <StatCard
+                title="Free Preview"
+                value={String(stats?.freeUsers ?? 0)}
+                note="Observer/free tier"
+              />
+              <StatCard
+                title="Pro"
+                value={String(stats?.proUsers ?? 0)}
+                note="Paid members"
+              />
+              <StatCard
+                title="Admin"
+                value={String(stats?.adminUsers ?? 0)}
+                note="Privileged accounts"
+              />
             </div>
           </SectionCard>
         );
 
       case "payments":
         return (
-          <SectionCard title="Payments" subtitle="Recent payment flow and subscription money trail">
-            <div className="overflow-hidden rounded-2xl border border-white/10">
-              <table className="w-full text-left text-sm">
-                <thead className="bg-white/[0.04] text-white/50">
-                  <tr>
-                    <th className="px-4 py-3 font-medium">User</th>
-                    <th className="px-4 py-3 font-medium">Amount</th>
-                    <th className="px-4 py-3 font-medium">Status</th>
-                    <th className="px-4 py-3 font-medium">Date</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/10 text-white/80">
-                  <tr>
-                    <td className="px-4 py-3">alina@evatrix.com</td>
-                    <td className="px-4 py-3">$29</td>
-                    <td className="px-4 py-3">Paid</td>
-                    <td className="px-4 py-3">2026-04-16</td>
-                  </tr>
-                </tbody>
-              </table>
+          <SectionCard
+            title="Payments"
+            subtitle="Billing integration can be attached next"
+          >
+            <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-4 text-sm text-white/65">
+              Payment layer is not wired yet. Core auth, database, and live user
+              tracking are now the active production foundation.
             </div>
           </SectionCard>
         );
 
       case "access":
         return (
-          <SectionCard title="Access Control" subtitle="Manual access and module state overview">
+          <SectionCard
+            title="Access Control"
+            subtitle="Current production access state"
+          >
             <div className="grid gap-4 md:grid-cols-2">
               <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-white/80">
                 Preview Access: <span className="text-emerald-300">Enabled</span>
               </div>
               <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-white/80">
-                Pro Signals: <span className="text-emerald-300">Enabled</span>
+                Database Auth: <span className="text-emerald-300">Enabled</span>
               </div>
               <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-white/80">
-                Pro Auto: <span className="text-amber-300">Closed</span>
+                Admin Session: <span className="text-emerald-300">Enabled</span>
               </div>
               <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-white/80">
-                Forex Access: <span className="text-amber-300">Locked</span>
+                Hardcoded File DB: <span className="text-rose-300">Removed</span>
               </div>
             </div>
           </SectionCard>
@@ -275,33 +382,46 @@ export default function AdminPage() {
 
       case "activity":
         return (
-          <SectionCard title="Activity" subtitle="Recent admin and member actions">
+          <SectionCard
+            title="Activity"
+            subtitle="Recent system-facing member behavior"
+          >
             <div className="space-y-3 text-sm text-white/75">
-              <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
-                2026-04-16 — New premium activation created for alina@evatrix.com
-              </div>
-              <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
-                2026-04-16 — Admin login successful
-              </div>
-              <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
-                2026-04-15 — Preview member murat@evatrix.com registered
-              </div>
+              {(stats?.recentUsers || []).map((user) => (
+                <div
+                  key={user.id}
+                  className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3"
+                >
+                  {user.email} registered at {formatDate(user.createdAt)}
+                </div>
+              ))}
+              {!stats?.recentUsers?.length && (
+                <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
+                  No recent activity yet.
+                </div>
+              )}
             </div>
           </SectionCard>
         );
 
       case "settings":
         return (
-          <SectionCard title="Settings" subtitle="Administrative controls and future system options">
+          <SectionCard
+            title="Settings"
+            subtitle="Production foundation status"
+          >
             <div className="space-y-3 text-sm text-white/75">
               <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
-                Admin email notifications — pending
+                Neon database — connected
               </div>
               <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
-                Billing provider integration — pending
+                Vercel environment variables — active
               </div>
               <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
-                RBAC / role-based permissions — phase 2
+                Session signing — active
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
+                Next upgrade path: billing + admin audit logs + role actions
               </div>
             </div>
           </SectionCard>
@@ -312,65 +432,33 @@ export default function AdminPage() {
     }
   }
 
-  if (!isReady) {
+  if (!isReady || loading) {
     return (
       <main className="min-h-screen bg-[#070b11] text-white">
         <div className="mx-auto flex min-h-screen max-w-7xl items-center justify-center px-6">
-          <div className="text-sm text-white/60">Loading admin control panel...</div>
+          <div className="text-sm text-white/60">
+            Loading admin control panel...
+          </div>
         </div>
       </main>
     );
   }
 
-  if (!isAuthed) {
+  if (!isAuthorized) {
     return (
       <main className="min-h-screen bg-[#070b11] text-white">
         <div className="mx-auto flex min-h-screen max-w-7xl items-center justify-center px-6">
           <div className="w-full max-w-md rounded-[28px] border border-white/10 bg-white/[0.03] p-8 shadow-2xl">
             <div className="mb-5 flex items-center">
-             <EvatrixSiteLogo size="dashboard" className="mt-0" />
+              <EvatrixSiteLogo size="dashboard" className="mt-0" />
             </div>
-            <div className="text-xs uppercase tracking-[0.28em] text-cyan-300/70">Admin Login</div>
-            <h1 className="mt-3 text-3xl font-semibold">Evatrix Control Access</h1>
+            <div className="text-xs uppercase tracking-[0.28em] text-cyan-300/70">
+              Admin Access
+            </div>
+            <h1 className="mt-3 text-3xl font-semibold">Access denied</h1>
             <p className="mt-2 text-sm text-white/55">
-              Restricted owner area. Authorized administrative access only.
+              {loadError || "This account is not authorized to open admin."}
             </p>
-
-            <form onSubmit={handleLogin} className="mt-8 space-y-4">
-              <div>
-                <label className="mb-2 block text-sm text-white/70">Username</label>
-                <input
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  placeholder="Enter admin username"
-                  className="w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-white outline-none placeholder:text-white/25"
-                />
-              </div>
-
-              <div>
-                <label className="mb-2 block text-sm text-white/70">Password</label>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter admin password"
-                  className="w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-white outline-none placeholder:text-white/25"
-                />
-              </div>
-
-              {loginError ? (
-                <div className="rounded-2xl border border-red-400/20 bg-red-400/10 px-4 py-3 text-sm text-red-200">
-                  {loginError}
-                </div>
-              ) : null}
-
-              <button
-                type="submit"
-                className="w-full rounded-2xl bg-white px-4 py-3 font-medium text-black transition hover:opacity-90"
-              >
-                Enter Admin Panel
-              </button>
-            </form>
           </div>
         </div>
       </main>
@@ -383,13 +471,15 @@ export default function AdminPage() {
         <aside className="sticky top-4 h-[calc(100vh-2rem)] w-[280px] shrink-0 overflow-hidden rounded-[32px] border border-white/10 bg-[#0b1118]">
           <div className="flex h-full flex-col">
             <div className="border-b border-white/10 px-5 py-5">
-             <div className="text-[11px] uppercase tracking-[0.28em] text-cyan-300/70">
-              Super Admin
-             </div>
-             <div className="mt-3 flex items-center">
-              <EvatrixSiteLogo size="dashboard" className="mt-0" />
-             </div>
-             <div className="mt-2 text-sm text-white/50">Control Panel</div>
+              <div className="text-[11px] uppercase tracking-[0.28em] text-cyan-300/70">
+                Super Admin
+              </div>
+              <div className="mt-3 flex items-center">
+                <EvatrixSiteLogo size="dashboard" className="mt-0" />
+              </div>
+              <div className="mt-2 text-sm text-white/50">
+                Control Panel
+              </div>
             </div>
 
             <div className="flex-1 overflow-y-auto px-3 py-4">
@@ -433,8 +523,8 @@ export default function AdminPage() {
               {navItems.find((item) => item.key === activeTab)?.label}
             </h1>
             <p className="mt-2 max-w-3xl text-sm text-white/55">
-              Central administrative interface for user access, plans, payments, visibility,
-              and platform-level operational control.
+              Central administrative interface for live users, roles, access
+              visibility, and production-side operational control.
             </p>
           </div>
 

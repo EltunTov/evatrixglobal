@@ -12,7 +12,8 @@ export async function POST(req: Request) {
     const email = normalizeEmail(body.email || "");
     const password = String(body.password || "");
 
-    const user = validatePassword(email, password);
+    const user = await validatePassword(email, password);
+
     if (!user) {
       return NextResponse.json(
         { ok: false, error: "Invalid email or password." },
@@ -21,6 +22,7 @@ export async function POST(req: Request) {
     }
 
     const res = NextResponse.json({ ok: true, user });
+
     res.cookies.set(
       COOKIE_NAME,
       createSessionValue(user.id),

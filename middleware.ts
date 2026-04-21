@@ -6,8 +6,10 @@ const COOKIE_NAME = "evx_session";
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  const isDashboardRoute = pathname.startsWith("/dashboard");
-  if (!isDashboardRoute) {
+  const isProtected =
+    pathname.startsWith("/dashboard") || pathname.startsWith("/admin");
+
+  if (!isProtected) {
     return NextResponse.next();
   }
 
@@ -23,5 +25,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*"],
+  matcher: ["/dashboard/:path*", "/admin/:path*"],
 };

@@ -1,6 +1,6 @@
 import crypto from "crypto";
 import { cookies } from "next/headers";
-import { readDb } from "./db";
+import { findUserById } from "./db";
 
 export const COOKIE_NAME = "evx_session";
 
@@ -24,7 +24,11 @@ export const SESSION_COOKIE_OPTIONS = {
 export async function setSession(userId: string) {
   const cookieStore = await cookies();
 
-  cookieStore.set(COOKIE_NAME, createSessionValue(userId), SESSION_COOKIE_OPTIONS);
+  cookieStore.set(
+    COOKIE_NAME,
+    createSessionValue(userId),
+    SESSION_COOKIE_OPTIONS
+  );
 }
 
 export async function clearSession() {
@@ -45,6 +49,5 @@ export async function getCurrentUser() {
   if (!userId || !sig) return null;
   if (sign(userId) !== sig) return null;
 
-  const db = readDb();
-  return db.users.find((u) => u.id === userId) || null;
+  return await findUserById(userId);
 }
