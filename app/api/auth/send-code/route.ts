@@ -8,15 +8,24 @@ export async function POST(req: Request) {
     const email = normalizeEmail(body.email || "");
 
     if (!email || !email.includes("@")) {
-      return NextResponse.json({ ok: false, error: "Valid email required." }, { status: 400 });
+      return NextResponse.json(
+        { ok: false, error: "Valid email required." },
+        { status: 400 }
+      );
     }
 
     const code = generateCode();
-    upsertCode(email, code);
+
+    await upsertCode(email, code);
     await sendVerificationEmail(email, code);
 
     return NextResponse.json({ ok: true });
-  } catch {
-    return NextResponse.json({ ok: false, error: "Failed to send code." }, { status: 500 });
+  } catch (error) {
+    console.error("SEND_CODE_ERROR:", error);
+
+    return NextResponse.json(
+      { ok: false, error: "Failed to send code." },
+      { status: 500 }
+    );
   }
 }
