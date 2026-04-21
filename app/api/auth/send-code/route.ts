@@ -1,30 +1,39 @@
 import { NextResponse } from "next/server";
-import { generateCode, normalizeEmail, upsertCode } from "@/app/lib/db";
-import { sendVerificationEmail } from "@/app/lib/mail";
+import { normalizeEmail, validatePassword } from "@/app/lib/db";
+import {
+  COOKIE_NAME,
+  SESSION_COOKIE_OPTIONS,
+  createSessionValue,
+} from "@/app/lib/session";
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
     const email = normalizeEmail(body.email || "");
+    const password = String(body.password || "");
 
-    if (!email || !email.includes("@")) {
+    const user = await validatePassword(email, password);
+
+    if (!user) {
       return NextResponse.json(
-        { ok: false, error: "Valid email required." },
-        { status: 400 }
+        { ok: false, error: "Invalid email or password." },
+        { status: 401 }
       );
     }
 
-    const code = generateCode();
+    const res = NextResponse.json({ ok: true, user });
+    res.cookies.set(
+      COOKIE_NAME,
+      createSessionValue(user.id),
+      SESSION_COOKIE_OPTIONS
+    );
 
-    await upsertCode(email, code);
-    await sendVerificationEmail(email, code);
-
-    return NextResponse.json({ ok: true });
+    return res;
   } catch (error) {
-    console.error("SEND_CODE_ERROR:", error);
+    console.error("LOGIN_ERROR:", error);
 
     return NextResponse.json(
-      { ok: false, error: "Failed to send code." },
+      { ok: false, error: "Login failed." },
       { status: 500 }
     );
   }
