@@ -3,38 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-
-function EvatrixBrandMark() {
-  return (
-    <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl border border-cyan-400/20 bg-white/5 shadow-[0_0_40px_rgba(34,211,238,0.12)]">
-      <div className="absolute inset-0 rounded-2xl bg-cyan-400/10 blur-xl" />
-      <svg
-        viewBox="0 0 64 64"
-        className="relative h-9 w-9"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <path
-          d="M32 5L54 13V30C54 43.2 45.6 54.2 32 59C18.4 54.2 10 43.2 10 30V13L32 5Z"
-          stroke="#58E1FF"
-          strokeWidth="3"
-        />
-        <path
-          d="M18 39C22 34 26 31 30 31C34 31 37 34 40 34C44 34 47 30 50 24"
-          stroke="#FFFFFF"
-          strokeWidth="3"
-          strokeLinecap="round"
-        />
-        <path
-          d="M17 42L17 25M24 39L24 21M31 35L31 18M38 37L38 24M45 31L45 19"
-          stroke="#58E1FF"
-          strokeWidth="2.6"
-          strokeLinecap="round"
-        />
-      </svg>
-    </div>
-  );
-}
+import EvatrixSiteLogo from "../components/evatrix-site-logo";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -42,6 +11,8 @@ export default function SignupPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errorText, setErrorText] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -89,16 +60,8 @@ export default function SignupPage() {
       <div className="mx-auto flex min-h-screen max-w-[1280px] items-center px-6 py-10">
         <div className="grid w-full gap-8 lg:grid-cols-[0.95fr_1.05fr]">
           <section className="rounded-[34px] border border-white/10 bg-white/[0.04] p-8 md:p-10">
-            <div className="flex items-center gap-4">
-              <EvatrixBrandMark />
-              <div>
-                <p className="text-[11px] uppercase tracking-[0.34em] text-white/45">
-                  Evatrix Global
-                </p>
-                <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">
-                  Sign Up
-                </h1>
-              </div>
+            <div className="flex items-center">
+              <EvatrixSiteLogo size="auth" />
             </div>
 
             <p className="mt-6 max-w-xl text-sm leading-7 text-white/64 md:text-base">
@@ -145,7 +108,9 @@ export default function SignupPage() {
 
             <form onSubmit={handleSubmit} className="mt-8 space-y-5">
               <div>
-                <label className="mb-2 block text-sm text-white/72">Email Address</label>
+                <label className="mb-2 block text-sm text-white/72">
+                  Email Address
+                </label>
                 <input
                   type="email"
                   value={email}
@@ -156,25 +121,49 @@ export default function SignupPage() {
               </div>
 
               <div>
-                <label className="mb-2 block text-sm text-white/72">Password</label>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Create your password"
-                  className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none placeholder:text-white/28"
-                />
+                <label className="mb-2 block text-sm text-white/72">
+                  Password
+                </label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Create your password"
+                    className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 pr-24 text-white outline-none placeholder:text-white/28"
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 rounded-xl border border-white/10 bg-white/5 px-3 py-1 text-xs text-cyan-300 transition hover:bg-white/10"
+                  >
+                    {showPassword ? "Hide" : "Show"}
+                  </button>
+                </div>
               </div>
 
               <div>
-                <label className="mb-2 block text-sm text-white/72">Confirm Password</label>
-                <input
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="Confirm your password"
-                  className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none placeholder:text-white/28"
-                />
+                <label className="mb-2 block text-sm text-white/72">
+                  Confirm Password
+                </label>
+                <div className="relative">
+                  <input
+                    type={showConfirmPassword ? "text" : "password"}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Confirm your password"
+                    className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 pr-24 text-white outline-none placeholder:text-white/28"
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword((v) => !v)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 rounded-xl border border-white/10 bg-white/5 px-3 py-1 text-xs text-cyan-300 transition hover:bg-white/10"
+                  >
+                    {showConfirmPassword ? "Hide" : "Show"}
+                  </button>
+                </div>
               </div>
 
               {errorText ? (

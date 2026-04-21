@@ -211,16 +211,19 @@ export default function DashboardLayout({
     <div className={styles.appShell}>
       <aside className={styles.sidebar}>
         <div className={styles.sidebarInner}>
+         <div className={styles.brandDock}>
           <div className={styles.brandWrap}>
-           <EvatrixSiteLogo />
+           <EvatrixSiteLogo size="dashboard" className="-ml-4 -mt-8" />
           </div>
+
           <div className={styles.statusCard}>
-            <span className={styles.statusDot} />
-            <div>
-              <strong>System Active</strong>
-              <p>Crypto intelligence layer online</p>
-            </div>
+           <span className={styles.statusDot} />
+           <div>
+            <strong>System Active</strong>
+            <p>Crypto intelligence layer online</p>
+           </div>
           </div>
+         </div>
 
           <nav className={styles.nav}>
             {navGroups.map((group) => (

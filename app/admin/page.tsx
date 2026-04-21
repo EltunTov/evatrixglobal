@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import EvatrixSiteLogo from "../components/evatrix-site-logo";
 
 type AdminTab =
   | "overview"
@@ -326,6 +327,9 @@ export default function AdminPage() {
       <main className="min-h-screen bg-[#070b11] text-white">
         <div className="mx-auto flex min-h-screen max-w-7xl items-center justify-center px-6">
           <div className="w-full max-w-md rounded-[28px] border border-white/10 bg-white/[0.03] p-8 shadow-2xl">
+            <div className="mb-5 flex items-center">
+             <EvatrixSiteLogo size="dashboard" className="mt-0" />
+            </div>
             <div className="text-xs uppercase tracking-[0.28em] text-cyan-300/70">Admin Login</div>
             <h1 className="mt-3 text-3xl font-semibold">Evatrix Control Access</h1>
             <p className="mt-2 text-sm text-white/55">
@@ -379,11 +383,13 @@ export default function AdminPage() {
         <aside className="sticky top-4 h-[calc(100vh-2rem)] w-[280px] shrink-0 overflow-hidden rounded-[32px] border border-white/10 bg-[#0b1118]">
           <div className="flex h-full flex-col">
             <div className="border-b border-white/10 px-5 py-5">
-              <div className="text-[11px] uppercase tracking-[0.28em] text-cyan-300/70">
-                Super Admin
-              </div>
-              <div className="mt-2 text-2xl font-semibold">Evatrix</div>
-              <div className="mt-1 text-sm text-white/50">Control Panel</div>
+             <div className="text-[11px] uppercase tracking-[0.28em] text-cyan-300/70">
+              Super Admin
+             </div>
+             <div className="mt-3 flex items-center">
+              <EvatrixSiteLogo size="dashboard" className="mt-0" />
+             </div>
+             <div className="mt-2 text-sm text-white/50">Control Panel</div>
             </div>
 
             <div className="flex-1 overflow-y-auto px-3 py-4">

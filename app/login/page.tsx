@@ -1,13 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
+import EvatrixSiteLogo from "../components/evatrix-site-logo";
 
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [msg, setMsg] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -46,12 +48,8 @@ export default function LoginPage() {
 
       <section className="evx-shell evx-shell-narrow">
         <div className="evx-topline">
-          <div className="evx-brand">
-            <span className="evx-brand-badge">E</span>
-            <div>
-              <p className="evx-kicker">EVATRIX GLOBAL</p>
-              <h1 className="evx-brand-title">Member Login</h1>
-            </div>
+          <div className="flex items-center">
+            <EvatrixSiteLogo size="auth" />
           </div>
 
           <Link href="/signup" className="evx-link-pill">
@@ -87,16 +85,46 @@ export default function LoginPage() {
 
             <label className="evx-label">
               Password
-              <input
-                type="password"
-                placeholder="Enter your password"
-                className="evx-input"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
+              <div style={{ position: "relative" }}>
+                <input
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Enter your password"
+                  className="evx-input"
+                  style={{ paddingRight: "88px" }}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  style={{
+                    position: "absolute",
+                    right: "12px",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    border: "1px solid rgba(255,255,255,0.12)",
+                    background: "rgba(255,255,255,0.05)",
+                    color: "#7ddcff",
+                    borderRadius: "10px",
+                    padding: "6px 10px",
+                    fontSize: "12px",
+                    cursor: "pointer",
+                  }}
+                >
+                  {showPassword ? "Hide" : "Show"}
+                </button>
+              </div>
             </label>
 
-            <div style={{ marginTop: -6, marginBottom: 8, display: "flex", justifyContent: "flex-end" }}>
+            <div
+              style={{
+                marginTop: -6,
+                marginBottom: 8,
+                display: "flex",
+                justifyContent: "flex-end",
+              }}
+            >
               <Link
                 href="/forgot-password"
                 style={{
@@ -109,14 +137,24 @@ export default function LoginPage() {
               </Link>
             </div>
 
-            <button type="submit" className="evx-button evx-button-primary" disabled={loading}>
+            <button
+              type="submit"
+              className="evx-button evx-button-primary"
+              disabled={loading}
+            >
               {loading ? "Please wait..." : "Continue"}
             </button>
           </form>
 
           {msg ? <p style={{ marginTop: 14, color: "#9fdcff" }}>{msg}</p> : null}
 
-          <div style={{ marginTop: 18, color: "rgba(255,255,255,0.58)", fontSize: "14px" }}>
+          <div
+            style={{
+              marginTop: 18,
+              color: "rgba(255,255,255,0.58)",
+              fontSize: "14px",
+            }}
+          >
             Don&apos;t have an account?{" "}
             <Link
               href="/signup"

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { siteConfig } from "./config";
+import EvatrixSiteLogo from "./components/evatrix-site-logo";
 
 type Market = "crypto" | "forex";
 type Lang = "EN" | "TR" | "RU" | "DE" | "ES";
@@ -60,44 +61,36 @@ export default function HomePage() {
   }
 
   return (
-    <main className="min-h-screen overflow-hidden bg-[#050816] text-white">
+    <main className="min-h-screen bg-[#050816] text-white">
       <div className="relative min-h-screen">
         <LandingBackground />
 
-        <div className="relative z-10 mx-auto w-full max-w-[1440px] px-6 py-8">
-          <header className="evx-landing-header">
-            <div className="flex items-center gap-4">
-              <EvatrixBrandMark />
-
-              <div>
-                <p className="text-[11px] uppercase tracking-[0.34em] text-white/45">
-                  {siteConfig.title}
-                </p>
-                <h1 className="mt-1 text-[30px] font-semibold tracking-tight md:text-[36px]">
-                  {siteConfig.name}
-                </h1>
-              </div>
+        <div className="relative z-12 mx-auto w-full max-w-[1400px] px-4 pt-1">
+          <header className="relative sticky top-0 z-50 w-full before:absolute before:inset-y-0 before:left-1/2 before:-z-10 before:w-screen before:-translate-x-1/2 before:border-b before:border-white/10 before:bg-[#08111f]/72 before:backdrop-blur-md before:content-['']">
+           <div className="ml-0 flex h-[90px] w-full max-w-[1700px] items-center justify-between px-2">
+            <div className="flex shrink-0 items-center">
+             <EvatrixSiteLogo size="landing" className="xl:mt-1" />
             </div>
 
-            <nav className="hidden items-center gap-3 xl:flex">
-              {[
-                ["Features", "features"],
-                ["Showcase", "showcase"],
-                ["Pricing", "pricing"],
-                ["How It Works", "how-it-works"],
-                ["Help", "help-strip"],
-              ].map(([label, id]) => (
-                <button
-                  key={id}
-                  onClick={() => scrollToSection(id)}
-                  className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/78 transition hover:border-cyan-400/30 hover:text-white"
-                >
-                  {label}
-                </button>
-              ))}
+            <nav className="hidden xl:flex items-center justify-center gap-3">
+             {[
+              ["Features", "features"],
+              ["Showcase", "showcase"],
+              ["Pricing", "pricing"],
+              ["How It Works", "how-it-works"],
+              ["Help", "footer-support"],
+             ].map(([label, id]) => (
+              <button
+               key={id}
+               onClick={() => scrollToSection(id)}
+               className="rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-white/78 transition hover:border-cyan-400/30 hover:bg-white/[0.07] hover:text-white"
+              >
+               {label}
+              </button>
+             ))}
             </nav>
 
-            <div className="flex items-center gap-3">
+            <div className="flex shrink-0 items-center gap-3">
              <div className="relative">
               <button
                onClick={() => setLangOpen((v) => !v)}
@@ -118,33 +111,34 @@ export default function HomePage() {
                   className={`block w-full rounded-xl px-3 py-2 text-left text-sm transition ${
                    selectedLang === lang
                     ? "bg-cyan-400/10 text-cyan-300"
-                     : "text-white/75 hover:bg-white/5"
+                    : "text-white/75 hover:bg-white/5"
                   }`}
                  >
                   {lang}
                  </button>
-               ))}
+                ))}
+               </div>
+              )}
              </div>
-            )}
+
+             <Link
+              href="/signup"
+              className="rounded-2xl bg-cyan-400 px-5 py-3 text-sm font-medium text-black transition hover:opacity-90"
+             >
+              Sign Up
+             </Link>
+
+             <Link
+              href="/login"
+              className="rounded-2xl border border-white/12 bg-white/5 px-5 py-3 text-sm text-white/90 transition hover:border-cyan-400/35 hover:bg-white/[0.08]"
+             >
+              Member Login
+             </Link>
+            </div>
            </div>
-
-           <Link
-            href="/signup"
-            className="rounded-2xl bg-cyan-400 px-5 py-3 text-sm font-medium text-black transition hover:opacity-90"
-           >
-            Sign Up
-           </Link>
-
-           <Link
-            href="/login"
-            className="rounded-2xl border border-white/12 bg-white/5 px-5 py-3 text-sm text-white/90 transition hover:border-cyan-400/35 hover:bg-white/[0.08]"
-           >
-            Member Login
-           </Link>
-          </div>
           </header>
 
-          <section className="grid items-center gap-10 py-10 lg:grid-cols-[0.92fr_1.08fr] lg:py-14">
+          <section className="grid items-center gap-10 pt-10 pb-10 lg:grid-cols-[0.92fr_1.08fr] lg:pt-8 lg:pb-14">
             <div className="max-w-2xl">
               <p className="text-sm uppercase tracking-[0.38em] text-cyan-400">
                 {siteConfig.hero.kicker}
@@ -251,7 +245,10 @@ export default function HomePage() {
             </button>
           </section>
 
-          <section id="pricing" className="mt-12 rounded-[34px] border border-white/10 bg-white/[0.04] p-6 md:p-8">
+          <section
+            id="pricing"
+            className="mt-12 rounded-[34px] border border-white/10 bg-white/[0.04] p-6 md:p-8"
+          >
             <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
               <div>
                 <p className="text-xs uppercase tracking-[0.35em] text-cyan-400">
@@ -311,17 +308,17 @@ export default function HomePage() {
                   </div>
 
                   <div className="mt-8">
-                   <Link
-                    href={`/register?plan=${plan.id}`}
-                    className={`flex w-full items-center justify-center rounded-2xl px-5 py-3 text-sm font-medium transition ${
-                     plan.featured
-                      ? "bg-cyan-400 text-black hover:opacity-90"
-                       : "border border-white/12 bg-white/5 text-white hover:bg-white/[0.08]"
-                  }`}
-                >
-                 View Access
-               </Link>
-              </div>
+                    <Link
+                      href={`/register?plan=${plan.id}`}
+                      className={`flex w-full items-center justify-center rounded-2xl px-5 py-3 text-sm font-medium transition ${
+                        plan.featured
+                          ? "bg-cyan-400 text-black hover:opacity-90"
+                          : "border border-white/12 bg-white/5 text-white hover:bg-white/[0.08]"
+                      }`}
+                    >
+                      View Access
+                    </Link>
+                  </div>
                 </div>
               ))}
             </div>
@@ -430,7 +427,10 @@ export default function HomePage() {
             </div>
           </section>
 
-          <section id="how-it-works" className="mt-14 rounded-[34px] border border-white/10 bg-white/[0.04] p-8">
+          <section
+            id="how-it-works"
+            className="mt-14 rounded-[34px] border border-white/10 bg-white/[0.04] p-8"
+          >
             <div className="max-w-3xl">
               <p className="text-xs uppercase tracking-[0.35em] text-cyan-400">
                 How it works
@@ -456,149 +456,111 @@ export default function HomePage() {
             </div>
           </section>
 
-          <section id="help-strip" className="mt-14">
-            <div className="rounded-[34px] border border-cyan-400/20 bg-cyan-400/[0.07] p-8 shadow-[0_0_80px_rgba(34,211,238,0.06)]">
-              <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr] lg:items-end">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.35em] text-cyan-300">
-                    Need guidance?
-                  </p>
-                  <h3 className="mt-4 text-3xl font-semibold md:text-5xl">
-                    Help, access, pricing, and workflow answers live in one place.
-                  </h3>
-                  <p className="mt-4 max-w-2xl text-sm leading-6 text-white/70 md:text-base">
-                    Explore Help Center for billing, exchange connection, live signals,
-                    watchlists, strategy visibility, risk controls, and account support.
-                  </p>
-                </div>
+          <footer
+           id="footer-support"
+           className="mt-6 rounded-[26px] border border-white/10 bg-white/[0.04] p-4"
+          >
+           <div className="grid gap-5 lg:grid-cols-[1.05fr_0.95fr]">
+            <div>
+             <div className="flex items-center leading-none">
+              <EvatrixSiteLogo size="small" />
+             </div>
 
-                <div className="flex flex-wrap gap-4 lg:justify-end">
-                  <Link
-                    href="/dashboard/help"
-                    className="rounded-2xl bg-cyan-400 px-6 py-3 text-sm font-medium text-black transition hover:opacity-90"
-                  >
-                    Open Help Center
-                  </Link>
-                  <Link
-                    href="/login"
-                    className="rounded-2xl border border-white/12 bg-white/5 px-6 py-3 text-sm text-white/90 transition hover:bg-white/[0.08]"
-                  >
-                    Member Login
-                  </Link>
-                </div>
-              </div>
+             <p className="mt-2 max-w-xl text-sm leading-6 text-white/62">
+              Broad crypto market monitoring, cleaner execution visibility, and structured
+              access for disciplined global operators.
+             </p>
+
+             <div className="mt-3 flex flex-wrap gap-2">
+              {[
+               "Broad crypto market coverage",
+               "High-liquidity asset monitoring",
+               "Institutional signal workflow",
+              ].map((item) => (
+               <span
+                key={item}
+                className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs uppercase tracking-[0.18em] text-white/72"
+               >
+                {item}
+               </span>
+              ))}
+             </div>
             </div>
-          </section>
 
-          <footer className="mt-14 rounded-[32px] border border-white/10 bg-white/[0.04] p-8">
-            <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
-              <div>
-                <div className="flex items-center gap-4">
-                  <EvatrixBrandMark small />
-                  <div>
-                    <div className="text-[11px] uppercase tracking-[0.32em] text-white/45">
-                      {siteConfig.title}
-                    </div>
-                    <div className="mt-1 text-2xl font-semibold">{siteConfig.name}</div>
-                  </div>
-                </div>
-
-                <p className="mt-5 max-w-xl text-sm leading-7 text-white/62">
-                  Broad crypto market monitoring, cleaner execution visibility,
-                  and structured access for disciplined global operators.
-                </p>
-
-                <div className="mt-6 flex flex-wrap gap-3">
-                  {[
-                   "Broad crypto market coverage",
-                   "High-liquidity asset monitoring",
-                   "Institutional signal workflow",
-                  ].map((item) => (
-                    <span
-                      key={item}
-                      className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs uppercase tracking-[0.18em] text-white/72"
-                    >
-                      {item}
-                    </span>
-                  ))}
-                </div>
-              </div>
-
-              <div className="grid gap-6 sm:grid-cols-3">
-                <FooterColumn
-                 title="Platform"
-                 items={[
-                  { label: "Features", href: "#features", isSection: true },
-                  { label: "Showcase", href: "#showcase", isSection: true },
-                  { label: "Pricing", href: "#pricing", isSection: true },
-                  { label: "How It Works", href: "#how-it-works", isSection: true },
-                ]}
-              />
-
-              <FooterColumn
-               title="Account"
-               items={[
-                { label: "Member Login", href: "/login" },
-                { label: "Dashboard", href: "/dashboard" },
-                { label: "Help Center", href: "/dashboard/help" },
-               ]}
-              />
-
-              <FooterColumn
-               title="Legal"
-               items={[
-                { label: "Terms", href: "/terms" },
-                { label: "Privacy", href: "/privacy" },
-                { label: "Risk Disclosure", href: "/risk-disclosure" },
-                { label: "Help Center", href: "/dashboard/help" },
+            <div className="grid gap-6 sm:grid-cols-3">
+             <FooterColumn
+              title="Platform"
+              items={[
+               { label: "Features", href: "#features", isSection: true },
+               { label: "Showcase", href: "#showcase", isSection: true },
+               { label: "Pricing", href: "#pricing", isSection: true },
+               { label: "How It Works", href: "#how-it-works", isSection: true },
               ]}
-            />
-              </div>
-            </div>
+             />
 
-            <div className="mt-8 border-t border-white/10 pt-6 text-sm text-white/45">
-              {siteConfig.footer.copyright}
+             <FooterColumn
+              title="Account"
+              items={[
+              { label: "Member Login", href: "/login" },
+              { label: "Help Center", href: "/help" },
+             ]}
+            />
+
+            <FooterColumn
+             title="Legal"
+             items={[
+              { label: "Terms", href: "/terms" },
+              { label: "Privacy", href: "/privacy" },
+              { label: "Risk Disclosure", href: "/risk-disclosure" },
+             ]}
+            />
+           </div>
+          </div>
+
+          <div className="mt-5 grid gap-3 border-t border-white/10 pt-4 md:grid-cols-3">
+           <div className="rounded-2xl border border-white/10 bg-[#081122]/70 p-4">
+            <div className="text-[10px] uppercase tracking-[0.24em] text-cyan-300">
+              Support
             </div>
-          </footer>
+            <a
+             href="mailto:support@evatrixglobal.com?subject=Evatrix%20Support%20Request"
+             className="mt-2 block text-sm font-medium text-white transition hover:text-cyan-300"
+            >
+             support@evatrixglobal.com
+            </a>
+            <p className="mt-2 text-sm leading-6 text-white/52">
+             Public-side questions, onboarding guidance, and access clarification.
+            </p>
+           </div>
+
+           <div className="rounded-2xl border border-white/10 bg-[#081122]/70 p-4">
+            <div className="text-[10px] uppercase tracking-[0.24em] text-cyan-300">
+             Launch Status
+            </div>
+            <div className="mt-2 text-sm font-medium text-white">Crypto active · Forex reserved</div>
+            <p className="mt-2 text-sm leading-6 text-white/52">
+             The live public launch is crypto-first. Forex remains isolated until its own rollout.
+            </p>
+           </div>
+
+           <div className="rounded-2xl border border-white/10 bg-[#081122]/70 p-4">
+            <div className="text-[10px] uppercase tracking-[0.24em] text-cyan-300">
+             Access Note
+            </div>
+            <div className="mt-2 text-sm font-medium text-white">Private tools require member login</div>
+            <p className="mt-2 text-sm leading-6 text-white/52">
+             Dashboard tools, deeper workflow guidance, and structured member operations stay inside the authenticated environment.
+            </p>
+           </div>
+          </div>
+
+          <div className="mt-5 border-t border-white/10 pt-4 text-sm text-white/45">
+           {siteConfig.footer.copyright}
+          </div>
+         </footer>
         </div>
       </div>
     </main>
-  );
-}
-
-function EvatrixBrandMark({ small = false }: { small?: boolean }) {
-  return (
-    <div
-      className={`relative flex items-center justify-center rounded-2xl border border-cyan-400/20 bg-white/5 shadow-[0_0_40px_rgba(34,211,238,0.12)] ${
-        small ? "h-12 w-12" : "h-14 w-14"
-      }`}
-    >
-      <div className="absolute inset-0 rounded-2xl bg-cyan-400/10 blur-xl" />
-      <svg
-        viewBox="0 0 64 64"
-        className="relative h-9 w-9"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <path
-          d="M32 5L54 13V30C54 43.2 45.6 54.2 32 59C18.4 54.2 10 43.2 10 30V13L32 5Z"
-          stroke="#58E1FF"
-          strokeWidth="3"
-        />
-        <path
-          d="M18 39C22 34 26 31 30 31C34 31 37 34 40 34C44 34 47 30 50 24"
-          stroke="#FFFFFF"
-          strokeWidth="3"
-          strokeLinecap="round"
-        />
-        <path
-          d="M17 42L17 25M24 39L24 21M31 35L31 18M38 37L38 24M45 31L45 19"
-          stroke="#58E1FF"
-          strokeWidth="2.6"
-          strokeLinecap="round"
-        />
-      </svg>
-    </div>
   );
 }
 

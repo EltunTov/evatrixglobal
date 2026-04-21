@@ -50,6 +50,8 @@ function RegisterContent() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [confirmPassword, setConfirmPassword] = useState("");
   const [errorText, setErrorText] = useState("");
   const [loading, setLoading] = useState(false);
@@ -99,7 +101,7 @@ function RegisterContent() {
         <div className="grid w-full gap-8 lg:grid-cols-[0.95fr_1.05fr]">
           <section className="rounded-[34px] border border-white/10 bg-white/[0.04] p-8 md:p-10">
             <div className="flex items-center gap-4">
-              <EvatrixSiteLogo />
+              <EvatrixSiteLogo size="auth" />
             </div>
 
             <p className="mt-6 max-w-xl text-sm leading-7 text-white/64 md:text-base">
@@ -155,27 +157,46 @@ function RegisterContent() {
               </div>
 
               <div>
-                <label className="mb-2 block text-sm text-white/72">Password</label>
+               <label className="mb-2 block text-sm text-white/72">Password</label>
+               <div className="relative">
                 <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Create your password"
-                  className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none placeholder:text-white/28"
+                 type={showPassword ? "text" : "password"}
+                 value={password}
+                 onChange={(e) => setPassword(e.target.value)}
+                 placeholder="Create your password"
+                 className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 pr-24 text-white outline-none placeholder:text-white/28"
                 />
+
+                <button
+                 type="button"
+                 onClick={() => setShowPassword((v) => !v)}
+                 className="absolute right-3 top-1/2 -translate-y-1/2 rounded-xl border border-white/10 bg-white/5 px-3 py-1 text-xs text-cyan-300 transition hover:bg-white/10"
+                >
+                 {showPassword ? "Hide" : "Show"}
+                </button>
+               </div>
               </div>
 
               <div>
-                <label className="mb-2 block text-sm text-white/72">Confirm Password</label>
+               <label className="mb-2 block text-sm text-white/72">Confirm Password</label>
+               <div className="relative">
                 <input
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="Confirm your password"
-                  className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none placeholder:text-white/28"
+                 type={showConfirmPassword ? "text" : "password"}
+                 value={confirmPassword}
+                 onChange={(e) => setConfirmPassword(e.target.value)}
+                 placeholder="Confirm your password"
+                 className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 pr-24 text-white outline-none placeholder:text-white/28"
                 />
-              </div>
 
+                <button
+                 type="button"
+                 onClick={() => setShowConfirmPassword((v) => !v)}
+                 className="absolute right-3 top-1/2 -translate-y-1/2 rounded-xl border border-white/10 bg-white/5 px-3 py-1 text-xs text-cyan-300 transition hover:bg-white/10"
+                >
+                 {showConfirmPassword ? "Hide" : "Show"}
+                </button>
+               </div>
+              </div>
               {errorText ? (
                 <div className="rounded-2xl border border-red-400/20 bg-red-400/10 px-4 py-3 text-sm text-red-200">
                   {errorText}
