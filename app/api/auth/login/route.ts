@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { normalizeEmail, validatePassword } from "@/app/lib/db";
-import { setSession } from "@/app/lib/session";
+import {
+  COOKIE_NAME,
+  SESSION_COOKIE_OPTIONS,
+  createSessionValue,
+} from "@/app/lib/session";
 
 export async function POST(req: Request) {
   try {
@@ -10,12 +14,24 @@ export async function POST(req: Request) {
 
     const user = validatePassword(email, password);
     if (!user) {
-      return NextResponse.json({ ok: false, error: "Invalid email or password." }, { status: 401 });
+      return NextResponse.json(
+        { ok: false, error: "Invalid email or password." },
+        { status: 401 }
+      );
     }
 
-    await setSession(user.id);
-    return NextResponse.json({ ok: true, user });
+    const res = NextResponse.json({ ok: true, user });
+    res.cookies.set(
+      COOKIE_NAME,
+      createSessionValue(user.id),
+      SESSION_COOKIE_OPTIONS
+    );
+
+    return res;
   } catch {
-    return NextResponse.json({ ok: false, error: "Login failed." }, { status: 500 });
+    return NextResponse.json(
+      { ok: false, error: "Login failed." },
+      { status: 500 }
+    );
   }
 }

@@ -33,7 +33,8 @@ export default function LoginPage() {
         return;
       }
 
-      router.push("/dashboard");
+      router.replace("/dashboard");
+      router.refresh();
     } catch {
       setLoading(false);
       setMsg("Something went wrong. Please try again.");

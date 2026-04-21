@@ -2,33 +2,36 @@ import crypto from "crypto";
 import { cookies } from "next/headers";
 import { readDb } from "./db";
 
-const COOKIE_NAME = "evx_session";
+export const COOKIE_NAME = "evx_session";
 
 function sign(value: string) {
   const secret = process.env.SESSION_SECRET || "dev-secret";
   return crypto.createHmac("sha256", secret).update(value).digest("hex");
 }
 
+export function createSessionValue(userId: string) {
+  return `${userId}.${sign(userId)}`;
+}
+
+export const SESSION_COOKIE_OPTIONS = {
+  httpOnly: true,
+  sameSite: "lax" as const,
+  secure: process.env.NODE_ENV === "production",
+  path: "/",
+  maxAge: 60 * 60 * 24 * 30,
+};
+
 export async function setSession(userId: string) {
-  const payload = `${userId}.${sign(userId)}`;
   const cookieStore = await cookies();
 
-  cookieStore.set(COOKIE_NAME, payload, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: false,
-    path: "/",
-    maxAge: 60 * 60 * 24 * 30,
-  });
+  cookieStore.set(COOKIE_NAME, createSessionValue(userId), SESSION_COOKIE_OPTIONS);
 }
 
 export async function clearSession() {
   const cookieStore = await cookies();
+
   cookieStore.set(COOKIE_NAME, "", {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: false,
-    path: "/",
+    ...SESSION_COOKIE_OPTIONS,
     maxAge: 0,
   });
 }
