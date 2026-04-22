@@ -3,9 +3,37 @@ export const siteConfig = {
   title: "Evatrix Global",
   description:
     "Institutional-grade crypto signal intelligence, execution visibility, and controlled market access.",
-  domain: "evatrixglobal.com",
+  domain: "https://evatrixglobal.com",
   launchMode: "crypto-first",
   forexEnabled: false,
+
+  seo: {
+    defaultTitle: "Evatrix Global",
+    titleTemplate: "%s | Evatrix Global",
+    description:
+      "Institutional-grade crypto signal intelligence, execution visibility, and controlled market access.",
+    keywords: [
+      "Evatrix",
+      "Evatrix Global",
+      "crypto signals",
+      "crypto intelligence",
+      "trading signals",
+      "market intelligence",
+      "execution visibility",
+      "crypto market analysis",
+      "institutional-grade trading",
+      "crypto trading platform",
+    ],
+    ogImage: "/brand/1000151293.png",
+    logo: "/brand/1000151293.png",
+  },
+
+  company: {
+    legalName: "Evatrix Global",
+    brandName: "Evatrix",
+    url: "https://evatrixglobal.com",
+    email: "support@evatrixglobal.com",
+  },
 
   hero: {
     kicker: "Global Market Intelligence",
@@ -112,12 +140,7 @@ export const siteConfig = {
   ],
 
   footer: {
-    legal: [
-      "Terms",
-      "Privacy",
-      "Risk Disclosure",
-      "Help Center",
-    ],
+    legal: ["Terms", "Privacy", "Risk Disclosure", "Help Center"],
     copyright: "© 2026 Evatrix. All rights reserved.",
   },
-};
+} as const;
