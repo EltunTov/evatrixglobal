@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import { getStats, listUsers } from "@/app/lib/db";
-import { getCurrentUser } from "@/app/lib/session";
+import { hasAdminSession } from "@/app/lib/admin-session";
 
 export async function GET() {
-  const currentUser = await getCurrentUser();
+  const authorized = await hasAdminSession();
 
-  if (!currentUser || currentUser.role !== "admin") {
+  if (!authorized) {
     return NextResponse.json(
       { ok: false, error: "Unauthorized." },
       { status: 403 }

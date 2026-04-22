@@ -89,90 +89,107 @@ function formatDate(value: string | null) {
 export default function AdminPage() {
   const [isReady, setIsReady] = useState(false);
   const [isAuthorized, setIsAuthorized] = useState(false);
-  const [currentAdminEmail, setCurrentAdminEmail] = useState("");
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
+
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [loginError, setLoginError] = useState("");
+  const [loginLoading, setLoginLoading] = useState(false);
+
   const [activeTab, setActiveTab] = useState<AdminTab>("overview");
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [users, setUsers] = useState<UserRecord[]>([]);
 
   const navItems = useMemo(
-    () => [
-      { key: "overview", label: "Overview" },
-      { key: "users", label: "Users" },
-      { key: "packages", label: "Packages" },
-      { key: "payments", label: "Payments" },
-      { key: "access", label: "Access" },
-      { key: "activity", label: "Activity" },
-      { key: "settings", label: "Settings" },
-    ] as { key: AdminTab; label: string }[],
+    () =>
+      [
+        { key: "overview", label: "Overview" },
+        { key: "users", label: "Users" },
+        { key: "packages", label: "Packages" },
+        { key: "payments", label: "Payments" },
+        { key: "access", label: "Access" },
+        { key: "activity", label: "Activity" },
+        { key: "settings", label: "Settings" },
+      ] as { key: AdminTab; label: string }[],
     []
   );
 
-  useEffect(() => {
-    let mounted = true;
+  async function loadAdminData() {
+    try {
+      setLoading(true);
+      setLoadError("");
 
-    async function load() {
-      try {
-        const meRes = await fetch("/api/auth/me", { cache: "no-store" });
-        const meData = await meRes.json();
+      const overviewRes = await fetch("/api/admin/overview", {
+        cache: "no-store",
+      });
 
-        if (!mounted) return;
+      const overviewData = await overviewRes.json();
 
-        if (!meData?.user) {
-          window.location.href = "/login?next=/admin";
-          return;
-        }
-
-        if (meData.user.role !== "admin") {
-          setIsAuthorized(false);
-          setLoadError("This account is not authorized for admin access.");
-          setLoading(false);
-          setIsReady(true);
-          return;
-        }
-
-        setCurrentAdminEmail(meData.user.email);
-        setIsAuthorized(true);
-
-        const overviewRes = await fetch("/api/admin/overview", {
-          cache: "no-store",
-        });
-        const overviewData = await overviewRes.json();
-
-        if (!mounted) return;
-
-        if (!overviewRes.ok || !overviewData?.ok) {
-          setLoadError(overviewData?.error || "Failed to load admin data.");
-          setLoading(false);
-          setIsReady(true);
-          return;
-        }
-
-        setStats(overviewData.stats);
-        setUsers(overviewData.users || []);
+      if (!overviewRes.ok || !overviewData?.ok) {
+        setIsAuthorized(false);
         setLoading(false);
         setIsReady(true);
-      } catch {
-        if (!mounted) return;
-        setLoadError("Admin panel failed to load.");
-        setLoading(false);
-        setIsReady(true);
+        return;
       }
+
+      setStats(overviewData.stats);
+      setUsers(overviewData.users || []);
+      setIsAuthorized(true);
+      setLoading(false);
+      setIsReady(true);
+    } catch {
+      setLoadError("Admin panel failed to load.");
+      setIsAuthorized(false);
+      setLoading(false);
+      setIsReady(true);
     }
+  }
 
-    load();
-
-    return () => {
-      mounted = false;
-    };
+  useEffect(() => {
+    loadAdminData();
   }, []);
+
+  async function handleAdminLogin(e: React.FormEvent) {
+    e.preventDefault();
+    setLoginError("");
+
+    try {
+      setLoginLoading(true);
+
+      const res = await fetch("/api/admin/access", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data?.ok) {
+        setLoginError(data?.error || "Admin login failed.");
+        setLoginLoading(false);
+        return;
+      }
+
+      setUsername("");
+      setPassword("");
+      await loadAdminData();
+    } catch {
+      setLoginError("Admin login failed.");
+    } finally {
+      setLoginLoading(false);
+    }
+  }
 
   async function handleLogout() {
     try {
-      await fetch("/api/auth/logout", { method: "POST" });
+      await fetch("/api/admin/access", { method: "DELETE" });
     } catch {}
-    window.location.href = "/login";
+
+    setIsAuthorized(false);
+    setStats(null);
+    setUsers([]);
+    setActiveTab("overview");
   }
 
   function renderContent() {
@@ -266,8 +283,8 @@ export default function AdminPage() {
                     <span className="text-emerald-300">Active</span>
                   </div>
                   <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
-                    <span>Current Admin</span>
-                    <span className="text-cyan-300">{currentAdminEmail}</span>
+                    <span>Admin Gate</span>
+                    <span className="text-cyan-300">Protected</span>
                   </div>
                 </div>
               </SectionCard>
@@ -320,10 +337,7 @@ export default function AdminPage() {
 
       case "packages":
         return (
-          <SectionCard
-            title="Packages"
-            subtitle="Live membership distribution"
-          >
+          <SectionCard title="Packages" subtitle="Live membership distribution">
             <div className="grid gap-4 md:grid-cols-3">
               <StatCard
                 title="Free Preview"
@@ -374,7 +388,7 @@ export default function AdminPage() {
                 Admin Session: <span className="text-emerald-300">Enabled</span>
               </div>
               <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-white/80">
-                Hardcoded File DB: <span className="text-rose-300">Removed</span>
+                Admin Gate: <span className="text-emerald-300">Username + Password</span>
               </div>
             </div>
           </SectionCard>
@@ -406,10 +420,7 @@ export default function AdminPage() {
 
       case "settings":
         return (
-          <SectionCard
-            title="Settings"
-            subtitle="Production foundation status"
-          >
+          <SectionCard title="Settings" subtitle="Production foundation status">
             <div className="space-y-3 text-sm text-white/75">
               <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
                 Neon database — connected
@@ -421,7 +432,7 @@ export default function AdminPage() {
                 Session signing — active
               </div>
               <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
-                Next upgrade path: billing + admin audit logs + role actions
+                Admin gate — active
               </div>
             </div>
           </SectionCard>
@@ -452,13 +463,61 @@ export default function AdminPage() {
             <div className="mb-5 flex items-center">
               <EvatrixSiteLogo size="dashboard" className="mt-0" />
             </div>
+
             <div className="text-xs uppercase tracking-[0.28em] text-cyan-300/70">
-              Admin Access
+              Admin Login
             </div>
-            <h1 className="mt-3 text-3xl font-semibold">Access denied</h1>
+            <h1 className="mt-3 text-3xl font-semibold">Evatrix Control Access</h1>
             <p className="mt-2 text-sm text-white/55">
-              {loadError || "This account is not authorized to open admin."}
+              Enter admin username and password to open the owner dashboard.
             </p>
+
+            <form onSubmit={handleAdminLogin} className="mt-8 space-y-4">
+              <div>
+                <label className="mb-2 block text-sm text-white/70">
+                  Username
+                </label>
+                <input
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="Enter admin username"
+                  className="w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-white outline-none placeholder:text-white/25"
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm text-white/70">
+                  Password
+                </label>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter admin password"
+                  className="w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-white outline-none placeholder:text-white/25"
+                />
+              </div>
+
+              {loginError ? (
+                <div className="rounded-2xl border border-red-400/20 bg-red-400/10 px-4 py-3 text-sm text-red-200">
+                  {loginError}
+                </div>
+              ) : null}
+
+              {loadError ? (
+                <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white/70">
+                  {loadError}
+                </div>
+              ) : null}
+
+              <button
+                type="submit"
+                disabled={loginLoading}
+                className="w-full rounded-2xl bg-white px-4 py-3 font-medium text-black transition hover:opacity-90 disabled:opacity-60"
+              >
+                {loginLoading ? "Opening..." : "Enter Admin Panel"}
+              </button>
+            </form>
           </div>
         </div>
       </main>
@@ -477,9 +536,7 @@ export default function AdminPage() {
               <div className="mt-3 flex items-center">
                 <EvatrixSiteLogo size="dashboard" className="mt-0" />
               </div>
-              <div className="mt-2 text-sm text-white/50">
-                Control Panel
-              </div>
+              <div className="mt-2 text-sm text-white/50">Control Panel</div>
             </div>
 
             <div className="flex-1 overflow-y-auto px-3 py-4">
