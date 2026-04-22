@@ -1,20 +1,30 @@
 import { NextResponse } from "next/server";
 import { clearAdminSession, setAdminSession } from "@/app/lib/admin-session";
 
+const FALLBACK_ADMIN_USERNAME = "adminevatrix";
+const FALLBACK_ADMIN_PASSWORD = "evatrix2026";
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
 
-    const username = String(body.username || "").trim();
+    const username = String(body.username || "").trim().toLowerCase();
     const password = String(body.password || "").trim();
 
-    const expectedUsername = process.env.ADMIN_PANEL_USERNAME || "";
-    const expectedPassword = process.env.ADMIN_PANEL_PASSWORD || "";
+    const expectedUsername = String(
+      process.env.ADMIN_PANEL_USERNAME || FALLBACK_ADMIN_USERNAME
+    )
+      .trim()
+      .toLowerCase();
 
-    if (!expectedUsername || !expectedPassword) {
+    const expectedPassword = String(
+      process.env.ADMIN_PANEL_PASSWORD || FALLBACK_ADMIN_PASSWORD
+    ).trim();
+
+    if (!username || !password) {
       return NextResponse.json(
-        { ok: false, error: "Admin credentials are not configured." },
-        { status: 500 }
+        { ok: false, error: "Username and password are required." },
+        { status: 400 }
       );
     }
 
@@ -25,9 +35,12 @@ export async function POST(req: Request) {
       );
     }
 
-    await setAdminSession(username);
+    await setAdminSession(expectedUsername);
 
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({
+      ok: true,
+      username: expectedUsername,
+    });
   } catch {
     return NextResponse.json(
       { ok: false, error: "Admin login failed." },
