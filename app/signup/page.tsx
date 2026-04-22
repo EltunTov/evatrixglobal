@@ -9,19 +9,67 @@ export default function SignupPage() {
   const router = useRouter();
 
   const [email, setEmail] = useState("");
+  const [code, setCode] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
   const [errorText, setErrorText] = useState("");
+  const [successText, setSuccessText] = useState("");
   const [loading, setLoading] = useState(false);
+  const [sendingCode, setSendingCode] = useState(false);
+  const [codeSent, setCodeSent] = useState(false);
+
+  async function handleSendCode() {
+    setErrorText("");
+    setSuccessText("");
+
+    if (!email.trim() || !email.includes("@")) {
+      setErrorText("Valid email address is required.");
+      return;
+    }
+
+    try {
+      setSendingCode(true);
+
+      const res = await fetch("/api/auth/send-code", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.ok) {
+        setErrorText(data.error || "Failed to send verification code.");
+        return;
+      }
+
+      setCodeSent(true);
+      setSuccessText("Verification code sent to your email address.");
+    } catch {
+      setErrorText("Failed to send verification code.");
+    } finally {
+      setSendingCode(false);
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setErrorText("");
+    setSuccessText("");
 
-    if (!email.trim()) {
-      setErrorText("Email address is required.");
+    if (!email.trim() || !email.includes("@")) {
+      setErrorText("Valid email address is required.");
+      return;
+    }
+
+    if (!code.trim() || code.trim().length < 6) {
+      setErrorText("Verification code is required.");
       return;
     }
 
@@ -38,16 +86,27 @@ export default function SignupPage() {
     try {
       setLoading(true);
 
-      localStorage.setItem(
-        "evatrix_pending_user",
-        JSON.stringify({
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
           email,
-          access: "free_preview",
-          createdAt: new Date().toISOString(),
-        })
-      );
+          code: code.trim(),
+          password,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.ok) {
+        setErrorText(data.error || "Account creation failed.");
+        return;
+      }
 
       router.push("/dashboard");
+      router.refresh();
     } catch {
       setErrorText("Account creation failed. Please try again.");
     } finally {
@@ -111,11 +170,34 @@ export default function SignupPage() {
                 <label className="mb-2 block text-sm text-white/72">
                   Email Address
                 </label>
+                <div className="flex gap-3">
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Enter your email address"
+                    className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none placeholder:text-white/28"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleSendCode}
+                    disabled={sendingCode}
+                    className="shrink-0 rounded-2xl border border-cyan-300/30 bg-cyan-300/10 px-4 py-3 text-sm font-medium text-cyan-200 transition hover:bg-cyan-300/20 disabled:opacity-60"
+                  >
+                    {sendingCode ? "Sending..." : codeSent ? "Resend Code" : "Send Code"}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm text-white/72">
+                  Verification Code
+                </label>
                 <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Enter your email address"
+                  type="text"
+                  value={code}
+                  onChange={(e) => setCode(e.target.value)}
+                  placeholder="Enter the 6-digit code"
                   className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none placeholder:text-white/28"
                 />
               </div>
@@ -132,7 +214,6 @@ export default function SignupPage() {
                     placeholder="Create your password"
                     className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 pr-24 text-white outline-none placeholder:text-white/28"
                   />
-
                   <button
                     type="button"
                     onClick={() => setShowPassword((v) => !v)}
@@ -155,7 +236,6 @@ export default function SignupPage() {
                     placeholder="Confirm your password"
                     className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 pr-24 text-white outline-none placeholder:text-white/28"
                   />
-
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword((v) => !v)}
@@ -169,6 +249,12 @@ export default function SignupPage() {
               {errorText ? (
                 <div className="rounded-2xl border border-red-400/20 bg-red-400/10 px-4 py-3 text-sm text-red-200">
                   {errorText}
+                </div>
+              ) : null}
+
+              {successText ? (
+                <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-200">
+                  {successText}
                 </div>
               ) : null}
 
