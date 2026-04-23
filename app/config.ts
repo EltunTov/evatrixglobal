@@ -2,7 +2,7 @@ export const siteConfig = {
   name: "Evatrix",
   title: "Evatrix Global",
   description:
-    "Institutional-grade crypto signal intelligence, execution visibility, and controlled market access.",
+    "Institutional-grade crypto signal intelligence, execution visibility, and controlled market access for serious operators.",
   domain: "https://evatrixglobal.com",
   launchMode: "crypto-first",
   forexEnabled: false,
